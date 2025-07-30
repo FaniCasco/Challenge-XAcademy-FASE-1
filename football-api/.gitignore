@@ -1,0 +1,31 @@
+# Dependencias y entornos
+**/node_modules/ # Ignora CUALQUIER carpeta node_modules en cualquier nivel
+.env
+.env.local
+.DS_Store # macOS
+*.log
+
+# Build/Compilación
+**/dist/ # Ignora CUALQUIER carpeta dist/ en cualquier nivel
+*.tsbuildinfo # Archivo de compilación de TypeScript (si usas incremental)
+
+# Docker
+docker-data/
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# Otros archivos de logs/temporales que puedan generarse
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+tmp/
+
+# Archivos de Excel
+*.xls
+*.xlsx
+*.xlsm
+*.xlsb
+*.xltx

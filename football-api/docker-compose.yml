@@ -1,3 +1,5 @@
+version: '3.8' # Asegúrate de que la versión sea 3.8 o superior para healthcheck y condition
+
 services:
   mysql_db:
     image: mysql:8.0
@@ -10,11 +12,17 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3306:3306" # Make sure it is the same port as DB_PORT in your .env file'
+      - "3307:3306" # Make sure it is the same port as DB_PORT in your .env file'
     volumes:
       - db_data:/var/lib/mysql
-      - ./docker/db:/docker-entrypoint-initdb.d 
+      - ./docker/db:/docker-entrypoint-initdb.d
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck: # <--- AÑADIDO: Healthcheck para la base de datos
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 20s
+      retries: 10
+      start_period: 30s # Dale tiempo a MySQL para que inicialice y procese init.sql
 
   backend:
     build:
@@ -22,18 +30,20 @@ services:
       dockerfile: Dockerfile
     container_name: santex_academy_backend
     depends_on:
-      - mysql_db
+      mysql_db: # <--- MODIFICADO: Ahora depende de que mysql_db esté "healthy"
+        condition: service_healthy
     env_file:
       - .env
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
+      DB_HOST: mysql_db # <--- IMPORTANTE: Usar el nombre del servicio de Docker Compose
+      DB_PORT: 3306     # <--- IMPORTANTE: Usar el puerto INTERNO del contenedor MySQL
       DB_NAME: ${DB_NAME}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
+      NODE_ENV: development # Añadido, buena práctica para el backend
     volumes:
       - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - /usr/src/app/node_modules # Para evitar que el volumen de código sobrescriba node_modules
     ports:
       - "3000:3000"
     command: npm run start:dev
@@ -49,9 +59,9 @@ services:
       - ./frontend:/usr/src/app
       - /usr/src/app/node_modules
     depends_on:
-      - backend
+      - backend # El frontend necesita que el backend esté disponible
     command: npm run start -- --host 0.0.0.0
 
 
 volumes:
-  db_data:
+  db_data: # Definición del volumen para persistencia de datos de la DB
